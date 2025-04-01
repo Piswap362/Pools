@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi Swap - Liquidity Pools</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            --pi-primary: #1EC0C0;  /* Pi Network teal */
+            --pi-secondary: #2ECC71; /* Pi Network green */
+            --pi-accent: #F39C12;   /* Pi Network orange */
+            --pi-dark: #1A3A4F;     /* Dark blue from Pi Network */
+            --pi-light: #E8F4F8;    /* Light background from Pi Network */
+            --text-light: #FFFFFF;
+            --text-dark: #2C3E50;   /* Dark text from Pi Network */
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+            --success-color: #4CAF50;
+            --warning-color: #FFC107;
+            --error-color: #FF5252;
+            --gradient-primary: linear-gradient(135deg, var(--pi-primary) 0%, var(--pi-accent) 100%);
+            --gradient-dark: linear-gradient(135deg, var(--pi-dark) 0%, var(--pi-primary) 100%);
+            --modal-backdrop: rgba(0, 0, 0, 0.8);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--pi-dark);
+            color: var(--text-light);
+            overflow-x: hidden;
+        }
+        
+        .scroll-container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 100px;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 15px;
+            background: rgba(30, 192, 192, 0.3);
+            color: var(--text-light);
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: var(--transition);
+            border: 2px solid var(--pi-primary);
+        }
+        
+        .back-button:hover {
+            background: rgba(30, 192, 192, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .launch-notification {
+            background: var(--pi-accent);
+            color: var(--pi-dark);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+            border: 2px solid rgba(243, 156, 18, 0.5);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        
+        .dex-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .dex-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--pi-accent);
+        }
+        
+        .pool-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .pool-tab {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            flex: 1;
+            text-align: center;
+        }
+        
+        .pool-tab.active {
+            background: var(--pi-primary);
+            color: var(--pi-dark);
+            font-weight: 600;
+        }
+        
+        /* Pool Card */
+        .pool-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(30, 192, 192, 0.2);
+            transition: var(--transition);
+        }
+        
+        .pool-card:hover {
+            border-color: rgba(30, 192, 192, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+        
+        .pool-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .pool-tokens {
+            display: flex;
+            align-items: center;
+        }
+        
+        .pool-token-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--pi-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            margin-right: -8px;
+            position: relative;
+            z-index: 1;
+            color: var(--pi-dark);
+        }
+        
+        .pool-token-icon:last-child {
+            margin-right: 10px;
+            z-index: 0;
+        }
+        
+        .pool-name {
+            font-weight: 600;
+        }
+        
+        .pool-apy {
+            background: rgba(75, 181, 67, 0.2);
+            color: var(--success-color);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .pool-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .pool-detail {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 12px;
+        }
+        
+        .pool-detail-label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .pool-detail-value {
+            font-weight: 600;
+        }
+        
+        .pool-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .pool-action-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            color: var(--text-light);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .pool-action-btn.primary {
+            background: var(--gradient-primary);
+            color: var(--pi-dark);
+        }
+        
+        .pool-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Create Pool Card */
+        .create-pool-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px dashed rgba(30, 192, 192, 0.4);
+            text-align: center;
+            transition: var(--transition);
+        }
+        
+        .create-pool-card:hover {
+            border-color: var(--pi-accent);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .create-pool-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(30, 192, 192, 0.1);
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--pi-accent);
+        }
+        
+        .create-pool-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--pi-accent);
+        }
+        
+        .create-pool-desc {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 15px;
+        }
+        
+        .create-pool-btn {
+            background: var(--gradient-primary);
+            color: var(--pi-dark);
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .create-pool-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Button Links Section */
+        .button-links {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .link-button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(30, 192, 192, 0.3);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: var(--text-light);
+            transition: var(--transition);
+        }
+        
+        .link-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+        
+        .link-button i {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: var(--pi-accent);
+        }
+        
+        .link-button span {
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        /* Bottom Menu */
+        .bottom-menu {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 58, 79, 0.9);
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(30, 192, 192, 0.3);
+            z-index: 1000;
+            max-width: 400px;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+        
+        .menu-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            gap: 5px;
+            text-decoration: none;
+            position: relative;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: var(--transition);
+            opacity: 0.7;
+            flex: 1;
+        }
+        
+        .menu-btn:hover {
+            opacity: 1;
+            background: rgba(30, 192, 192, 0.1);
+        }
+        
+        .menu-btn i {
+            font-size: 20px;
+        }
+        
+        .menu-btn.active {
+            opacity: 1;
+            font-weight: 600;
+        }
+        
+        .menu-btn.active::after {
+            content: "";
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 3px;
+            background-color: var(--pi-accent);
+            border-radius: 3px;
+        }
+        
+        /* Floating Action Button */
+        .fab-container {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 15px;
+        }
+        
+        .fab-main {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            color: var(--pi-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+        }
+        
+        .fab-main:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+        
+        .fab-item {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient-dark);
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: var(--transition);
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+        }
+        
+        .fab-container.open .fab-item {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        
+        .fab-item:nth-child(1) { transition-delay: 0ms; }
+        .fab-item:nth-child(2) { transition-delay: 50ms; }
+        .fab-item:nth-child(3) { transition-delay: 100ms; }
+        
+        /* Modal Styles (matching Swap page) */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--modal-backdrop);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-out;
+            backdrop-filter: blur(5px);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background: var(--pi-dark);
+            border-radius: 16px;
+            padding: 25px;
+            width: 85%;
+            max-width: 350px;
+            border: 2px solid var(--pi-primary);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            background: var(--pi-dark);
+            padding: 10px 0;
+            z-index: 1;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--pi-accent);
+        }
+        
+        .close-modal {
+            background: var(--pi-primary);
+            color: var(--pi-dark);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+        
+        .close-modal:hover {
+            background: var(--pi-accent);
+            transform: rotate(90deg);
+        }
+        
+        /* Token Selector (from Swap page) */
+        .token-selector {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(30, 192, 192, 0.2);
+        }
+        
+        .token-selector-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .token-selector-label {
+            opacity: 0.8;
+        }
+        
+        .token-balance {
+            font-size: 12px;
+            color: var(--pi-primary);
+        }
+        
+        .token-selector-body {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .token-amount {
+            font-size: 18px;
+            font-weight: 600;
+            background: none;
+            border: none;
+            color: var(--text-light);
+            width: 60%;
+        }
+        
+        .token-amount:focus {
+            outline: none;
+        }
+        
+        .token-select {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .token-select:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .token-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--pi-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            margin-right: 8px;
+            color: var(--pi-dark);
+        }
+        
+        .token-name {
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        
+        /* Pool Info Section */
+        .pool-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .pool-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .pool-info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .pool-info-label {
+            opacity: 0.7;
+        }
+        
+        /* Confirmation Buttons */
+        .confirmation-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .confirmation-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+        }
+        
+        .confirmation-btn-primary {
+            background: var(--gradient-primary);
+            color: var(--pi-dark);
+        }
+        
+        .confirmation-btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        
+        .confirmation-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Fee Tier Selector */
+        .fee-tier-selector {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .fee-tier {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .fee-tier.active {
+            background: var(--gradient-primary);
+            color: var(--pi-dark);
+            font-weight: 600;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 350px) {
+            .pool-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-links {
+                grid-template-columns: 1fr;
+            }
+            
+            .confirmation-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="scroll-container">
+        <a href="swap.html" class="back-button">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+        
+        <div class="launch-notification">
+            🚀 Coming Soon: Yield farming features will be available soon!
+        </div>
+
+        <div class="dex-header">
+            <h1 class="dex-title">Liquidity Pools</h1>
+            <div>
+                <i class="fas fa-info-circle" style="color: var(--pi-accent); font-size: 20px;"></i>
+            </div>
+        </div>
+        
+        <div class="pool-tabs">
+            <button class="pool-tab active">All Pools</button>
+            <button class="pool-tab">Your Pools</button>
+            <button class="pool-tab">Top APY</button>
+        </div>
+        
+        <!-- Pool Cards -->
+        <div class="pool-card">
+            <div class="pool-header">
+                <div class="pool-tokens">
+                    <div class="pool-token-icon">π</div>
+                    <div class="pool-token-icon">$</div>
+                    <div class="pool-name">PI-USDT</div>
+                </div>
+                <div class="pool-apy">24.5% APY</div>
+            </div>
+            
+            <div class="pool-details">
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Total Liquidity</div>
+                    <div class="pool-detail-value">$1.2M</div>
+                </div>
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Your Share</div>
+                    <div class="pool-detail-value">$0.00</div>
+                </div>
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Volume (24h)</div>
+                    <div class="pool-detail-value">$245K</div>
+                </div>
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Fees (24h)</div>
+                    <div class="pool-detail-value">$1,245</div>
+                </div>
+            </div>
+            
+            <div class="pool-actions">
+                <button class="pool-action-btn add-liquidity-btn">
+                    <i class="fas fa-plus"></i> Add
+                </button>
+                <button class="pool-action-btn primary earn-rewards-btn">
+                    <i class="fas fa-chart-line"></i> Earn
+                </button>
+            </div>
+        </div>
+        
+        <div class="pool-card">
+            <div class="pool-header">
+                <div class="pool-tokens">
+                    <div class="pool-token-icon">π</div>
+                    <div class="pool-token-icon">P</div>
+                    <div class="pool-name">PI-PSWAP</div>
+                </div>
+                <div class="pool-apy">32.1% APY</div>
+            </div>
+            
+            <div class="pool-details">
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Total Liquidity</div>
+                    <div class="pool-detail-value">$845K</div>
+                </div>
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Your Share</div>
+                    <div class="pool-detail-value">$0.00</div>
+                </div>
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Volume (24h)</div>
+                    <div class="pool-detail-value">$180K</div>
+                </div>
+                <div class="pool-detail">
+                    <div class="pool-detail-label">Fees (24h)</div>
+                    <div class="pool-detail-value">$920</div>
+                </div>
+            </div>
+            
+            <div class="pool-actions">
+                <button class="pool-action-btn add-liquidity-btn">
+                    <i class="fas fa-plus"></i> Add
+                </button>
+                <button class="pool-action-btn primary earn-rewards-btn">
+                    <i class="fas fa-chart-line"></i> Earn
+                </button>
+            </div>
+        </div>
+        
+        <!-- Create Pool Card -->
+        <div class="create-pool-card">
+            <div class="create-pool-icon">
+                <i class="fas fa-plus"></i>
+            </div>
+            <div class="create-pool-title">Create a Pool</div>
+            <div class="create-pool-desc">Become a liquidity provider and earn trading fees</div>
+            <button class="create-pool-btn" id="createPoolBtn">Create New Pool</button>
+        </div>
+        
+        <!-- Button Links Section -->
+        <div class="button-links">
+            <a href="#" class="link-button" id="howPoolsWorkBtn">
+                <i class="fas fa-water"></i>
+                <span>How Pools Work</span>
+            </a>
+            <a href="#" class="link-button" id="feeStructureBtn">
+                <i class="fas fa-percentage"></i>
+                <span>Fee Structure</span>
+            </a>
+            <a href="#" class="link-button" id="lockedPoolsBtn">
+                <i class="fas fa-lock"></i>
+                <span>Locked Pools</span>
+            </a>
+            <a href="#" class="link-button" id="yourHistoryBtn">
+                <i class="fas fa-history"></i>
+                <span>Your History</span>
+            </a>
+        </div>
+        
+        <div class="bottom-menu">
+            <a href="swap.html" class="menu-btn">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Swap</span>
+            </a>
+            <a href="stats.html" class="menu-btn">
+                <i class="fas fa-chart-line"></i>
+                <span>Stats</span>
+            </a>
+            <a href="pools.html" class="menu-btn active">
+                <i class="fas fa-coins"></i>
+                <span>Pools</span>
+            </a>
+            <a href="profile.html" class="menu-btn">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Floating Action Button -->
+    <div class="fab-container" id="fabContainer">
+        <button class="fab-main" id="fabMain">
+            <i class="fas fa-bolt"></i>
+        </button>
+        <button class="fab-item" id="shareBtn">
+            <i class="fas fa-share-alt"></i>
+        </button>
+        <button class="fab-item" id="qrBtn">
+            <i class="fas fa-qrcode"></i>
+        </button>
+        <button class="fab-item" id="supportBtn">
+            <i class="fas fa-headset"></i>
+        </button>
+    </div>
+    
+    <!-- Add Liquidity Modal -->
+    <div class="modal" id="addLiquidityModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Add Liquidity</h2>
+                <button class="close-modal" id="closeAddLiquidityModal">&times;</button>
+            </div>
+            
+            <div class="token-selector">
+                <div class="token-selector-header">
+                    <span class="token-selector-label">Token 1</span>
+                    <span class="token-balance">Balance: 10.5 π</span>
+                </div>
+                <div class="token-selector-body">
+                    <input type="number" class="token-amount" placeholder="0.0">
+                    <div class="token-select">
+                        <div class="token-icon">π</div>
+                        <span class="token-name">PI</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="token-selector">
+                <div class="token-selector-header">
+                    <span class="token-selector-label">Token 2</span>
+                    <span class="token-balance">Balance: 0.0</span>
+                </div>
+                <div class="token-selector-body">
+                    <input type="number" class="token-amount" placeholder="0.0">
+                    <div class="token-select">
+                        <div class="token-icon">$</div>
+                        <span class="token-name">USDT</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pool-info">
+                <div class="pool-info-row">
+                    <span class="pool-info-label">Exchange Rate</span>
+                    <span>1 π = 30.15 USDT</span>
+                </div>
+                <div class="pool-info-row">
+                    <span class="pool-info-label">Share of Pool</span>
+                    <span>0%</span>
+                </div>
+            </div>
+            
+            <div class="confirmation-actions">
+                <button class="confirmation-btn confirmation-btn-secondary" id="cancelAddLiquidity">Cancel</button>
+                <button class="confirmation-btn confirmation-btn-primary">Add Liquidity</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Earn Rewards Modal -->
+    <div class="modal" id="earnRewardsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Earn Rewards</h2>
+                <button class="close-modal" id="closeEarnRewardsModal">&times;</button>
+            </div>
+            
+            <div class="token-selector">
+                <div class="token-selector-header">
+                    <span class="token-selector-label">Pool</span>
+                </div>
+                <div class="token-selector-body">
+                    <div style="width: 60%; font-weight: 600;">PI-USDT</div>
+                    <div class="pool-apy">24.5% APY</div>
+                </div>
+            </div>
+            
+            <div class="token-selector">
+                <div class="token-selector-header">
+                    <span class="token-selector-label">Amount to Stake</span>
+                    <span class="token-balance">Balance: 0 LP</span>
+                </div>
+                <div class="token-selector-body">
+                    <input type="number" class="token-amount" placeholder="0.0">
+                    <button class="token-select" style="min-width: 80px;">
+                        Max
+                    </button>
+                </div>
+            </div>
+            
+            <div class="pool-info">
+                <div class="pool-info-row">
+                    <span class="pool-info-label">Your Share</span>
+                    <span>0%</span>
+                </div>
+                <div class="pool-info-row">
+                    <span class="pool-info-label">Estimated Rewards</span>
+                    <span>0 PSWAP/day</span>
+                </div>
+            </div>
+            
+            <div class="confirmation-actions">
+                <button class="confirmation-btn confirmation-btn-secondary" id="cancelEarnRewards">Cancel</button>
+                <button class="confirmation-btn confirmation-btn-primary">Stake & Earn</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Pool Modal -->
+    <div class="modal" id="createPoolModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create Pool</h2>
+                <button class="close-modal" id="closeCreatePoolModal">&times;</button>
+            </div>
+            
+            <div class="token-selector">
+                <div class="token-selector-header">
+                    <span class="token-selector-label">Token 1</span>
+                </div>
+                <div class="token-selector-body">
+                    <div style="width: 60%;">
+                        <input type="text" class="token-amount" placeholder="Select token">
+                    </div>
+                    <div class="token-select">
+                        <span class="token-name">Select</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="token-selector">
+                <div class="token-selector-header">
+                    <span class="token-selector-label">Token 2</span>
+                </div>
+                <div class="token-selector-body">
+                    <div style="width: 60%;">
+                        <input type="text" class="token-amount" placeholder="Select token">
+                    </div>
+                    <div class="token-select">
+                        <span class="token-name">Select</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="token-selector">
+                <div class="token-selector-header">
+                    <span class="token-selector-label">Fee Tier</span>
+                </div>
+                <div class="fee-tier-selector">
+                    <div class="fee-tier">0.05%</div>
+                    <div class="fee-tier">0.3%</div>
+                    <div class="fee-tier active">1%</div>
+                </div>
+            </div>
+            
+            <div class="pool-info">
+                <div class="pool-info-row">
+                    <span class="pool-info-label">Initial Price</span>
+                    <span>1 π = 30.15 USDT</span>
+                </div>
+                <div class="pool-info-row">
+                    <span class="pool-info-label">Initial Deposit</span>
+                    <span>1000 π + 30,150 USDT</span>
+                </div>
+            </div>
+            
+            <div class="confirmation-actions">
+                <button class="confirmation-btn confirmation-btn-secondary" id="cancelCreatePool">Cancel</button>
+                <button class="confirmation-btn confirmation-btn-primary">Create Pool</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Coming Soon Modal -->
+    <div class="modal coming-soon-modal" id="comingSoonModal">
+        <div class="modal-content">
+            <i class="fas fa-hourglass-half"></i>
+            <h3>Coming Soon</h3>
+            <p id="comingSoonMessage">This feature will be available when Pi Network opens its mainnet!</p>
+            <button class="confirmation-btn confirmation-btn-primary" id="closeComingSoonModal">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching functionality
+        const poolTabs = document.querySelectorAll('.pool-tab');
+        poolTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                poolTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Here you would typically filter pools based on the selected tab
+                console.log(`Selected tab: ${tab.textContent}`);
+            });
+        });
+        
+        // FAB Logic
+        const fabContainer = document.getElementById('fabContainer');
+        const fabMain = document.getElementById('fabMain');
+        
+        fabMain.addEventListener('click', () => {
+            fabContainer.classList.toggle('open');
+        });
+        
+        // Add Liquidity buttons
+        const addLiquidityBtns = document.querySelectorAll('.add-liquidity-btn');
+        addLiquidityBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const poolName = btn.closest('.pool-card').querySelector('.pool-name').textContent;
+                document.querySelector('#addLiquidityModal .modal-title').textContent = `Add to ${poolName}`;
+                document.getElementById('addLiquidityModal').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            });
+        });
+        
+        // Earn Rewards buttons
+        const earnRewardsBtns = document.querySelectorAll('.earn-rewards-btn');
+        earnRewardsBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const poolName = btn.closest('.pool-card').querySelector('.pool-name').textContent;
+                document.querySelector('#earnRewardsModal .modal-title').textContent = `Earn from ${poolName}`;
+                document.getElementById('earnRewardsModal').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            });
+        });
+        
+        // Create Pool button
+        document.getElementById('createPoolBtn').addEventListener('click', () => {
+            document.getElementById('createPoolModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        });
+        
+        // Close modals
+        document.getElementById('closeAddLiquidityModal').addEventListener('click', () => {
+            document.getElementById('addLiquidityModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+        
+        document.getElementById('closeEarnRewardsModal').addEventListener('click', () => {
+            document.getElementById('earnRewardsModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+        
+        document.getElementById('closeCreatePoolModal').addEventListener('click', () => {
+            document.getElementById('createPoolModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+        
+        // Cancel buttons
+        document.getElementById('cancelAddLiquidity').addEventListener('click', () => {
+            document.getElementById('addLiquidityModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+        
+        document.getElementById('cancelEarnRewards').addEventListener('click', () => {
+            document.getElementById('earnRewardsModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+        
+        document.getElementById('cancelCreatePool').addEventListener('click', () => {
+            document.getElementById('createPoolModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+        
+        // Coming Soon functionality
+        const comingSoonButtons = [
+            document.getElementById('howPoolsWorkBtn'),
+            document.getElementById('feeStructureBtn'),
+            document.getElementById('lockedPoolsBtn'),
+            document.getElementById('yourHistoryBtn'),
+            document.getElementById('shareBtn'),
+            document.getElementById('qrBtn'),
+            document.getElementById('supportBtn')
+        ];
+        
+        const comingSoonMessages = {
+            'howPoolsWorkBtn': 'Educational content about liquidity pools is coming soon!',
+            'feeStructureBtn': 'Detailed fee structure information will be available in the next update.',
+            'lockedPoolsBtn': 'Locked pools and staking features are under development.',
+            'yourHistoryBtn': 'Your liquidity pool history will be available soon.',
+            'shareBtn': 'Share functionality will be implemented soon.',
+            'qrBtn': 'QR code scanner integration is in progress.',
+            'supportBtn': 'Customer support portal is under construction.'
+        };
+        
+        comingSoonButtons.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('comingSoonMessage').textContent = 
+                    comingSoonMessages[btn.id] || 'This feature is coming soon!';
+                document.getElementById('comingSoonModal').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            });
+        });
+        
+        document.getElementById('closeComingSoonModal').addEventListener('click', function() {
+            document.getElementById('comingSoonModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+        
+        // Fee tier selection
+        const feeTiers = document.querySelectorAll('.fee-tier');
+        feeTiers.forEach(tier => {
+            tier.addEventListener('click', () => {
+                feeTiers.forEach(t => t.classList.remove('active'));
+                tier.classList.add('active');
+            });
+        });
+        
+        // Close modals when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        });
+        
+        // Close modals with Escape key
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                const openModals = document.querySelectorAll('.modal[style="display: flex;"]');
+                if (openModals.length > 0) {
+                    openModals.forEach(modal => {
+                        modal.style.display = 'none';
+                        document.body.style.overflow = 'auto';
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
